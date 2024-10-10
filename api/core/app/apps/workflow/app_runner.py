@@ -53,7 +53,7 @@ class WorkflowAppRunner(WorkflowBasedAppRunner):
         app_config = cast(WorkflowAppConfig, app_config)
 
         user_id = None
-        if self.application_generate_entity.invoke_from in [InvokeFrom.WEB_APP, InvokeFrom.SERVICE_API]:
+        if self.application_generate_entity.invoke_from in {InvokeFrom.WEB_APP, InvokeFrom.SERVICE_API}:
             end_user = db.session.query(EndUser).filter(EndUser.id == self.application_generate_entity.user_id).first()
             if end_user:
                 user_id = end_user.session_id
@@ -90,6 +90,9 @@ class WorkflowAppRunner(WorkflowBasedAppRunner):
             system_inputs = {
                 SystemVariableKey.FILES: files,
                 SystemVariableKey.USER_ID: user_id,
+                SystemVariableKey.APP_ID: app_config.app_id,
+                SystemVariableKey.WORKFLOW_ID: app_config.workflow_id,
+                SystemVariableKey.WORKFLOW_RUN_ID: self.application_generate_entity.workflow_run_id,
             }
 
             variable_pool = VariablePool(
@@ -113,7 +116,7 @@ class WorkflowAppRunner(WorkflowBasedAppRunner):
             user_id=self.application_generate_entity.user_id,
             user_from=(
                 UserFrom.ACCOUNT
-                if self.application_generate_entity.invoke_from in [InvokeFrom.EXPLORE, InvokeFrom.DEBUGGER]
+                if self.application_generate_entity.invoke_from in {InvokeFrom.EXPLORE, InvokeFrom.DEBUGGER}
                 else UserFrom.END_USER
             ),
             invoke_from=self.application_generate_entity.invoke_from,

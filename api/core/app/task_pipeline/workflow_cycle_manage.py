@@ -85,6 +85,9 @@ class WorkflowCycleManage:
 
         # init workflow run
         workflow_run = WorkflowRun()
+        workflow_run_id = self._workflow_system_variables[SystemVariableKey.WORKFLOW_RUN_ID]
+        if workflow_run_id:
+            workflow_run.id = workflow_run_id
         workflow_run.tenant_id = self._workflow.tenant_id
         workflow_run.app_id = self._workflow.app_id
         workflow_run.sequence_number = new_sequence_number
@@ -383,7 +386,7 @@ class WorkflowCycleManage:
         :param workflow_node_execution: workflow node execution
         :return:
         """
-        if workflow_node_execution.node_type in [NodeType.ITERATION.value, NodeType.LOOP.value]:
+        if workflow_node_execution.node_type in {NodeType.ITERATION.value, NodeType.LOOP.value}:
             return None
 
         response = NodeStartStreamResponse(
@@ -430,7 +433,7 @@ class WorkflowCycleManage:
         :param workflow_node_execution: workflow node execution
         :return:
         """
-        if workflow_node_execution.node_type in [NodeType.ITERATION.value, NodeType.LOOP.value]:
+        if workflow_node_execution.node_type in {NodeType.ITERATION.value, NodeType.LOOP.value}:
             return None
 
         return NodeFinishStreamResponse(

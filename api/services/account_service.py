@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import secrets
 import uuid
@@ -12,12 +13,22 @@ from werkzeug.exceptions import Unauthorized
 from configs import dify_config
 from constants.languages import language_timezone_mapping, languages
 from events.tenant_event import tenant_was_created
+from extensions.ext_database import db
 from extensions.ext_redis import redis_client
 from libs.helper import RateLimiter, TokenManager
 from libs.passport import PassportService
 from libs.password import compare_password, hash_password, valid_password
 from libs.rsa import generate_key_pair
-from models.account import *
+from models.account import (
+    Account,
+    AccountIntegrate,
+    AccountStatus,
+    Tenant,
+    TenantAccountJoin,
+    TenantAccountJoinRole,
+    TenantAccountRole,
+    TenantStatus,
+)
 from models.model import DifySetup
 from services.errors.account import (
     AccountAlreadyInTenantError,
@@ -47,7 +58,7 @@ class AccountService:
         if not account:
             return None
 
-        if account.status in [AccountStatus.BANNED.value, AccountStatus.CLOSED.value]:
+        if account.status in {AccountStatus.BANNED.value, AccountStatus.CLOSED.value}:
             raise Unauthorized("Account is banned or closed.")
 
         current_tenant: TenantAccountJoin = TenantAccountJoin.query.filter_by(
@@ -92,7 +103,7 @@ class AccountService:
         if not account:
             raise AccountLoginError("Invalid email or password.")
 
-        if account.status == AccountStatus.BANNED.value or account.status == AccountStatus.CLOSED.value:
+        if account.status in {AccountStatus.BANNED.value, AccountStatus.CLOSED.value}:
             raise AccountLoginError("Account is banned or closed.")
 
         if account.status == AccountStatus.PENDING.value:
@@ -321,7 +332,7 @@ class TenantService:
         return tenant
 
     @staticmethod
-    def switch_tenant(account: Account, tenant_id: int = None) -> None:
+    def switch_tenant(account: Account, tenant_id: Optional[int] = None) -> None:
         """Switch the current workspace for the account"""
 
         # Ensure tenant_id is provided
@@ -427,7 +438,7 @@ class TenantService:
             "remove": [TenantAccountRole.OWNER],
             "update": [TenantAccountRole.OWNER],
         }
-        if action not in ["add", "remove", "update"]:
+        if action not in {"add", "remove", "update"}:
             raise InvalidActionError("Invalid action.")
 
         if member:
